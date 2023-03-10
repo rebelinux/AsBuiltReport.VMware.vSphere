@@ -2300,27 +2300,33 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                                 #endregion ESXi Host Advanced System Settings
 
                                                 #region ESXi Host Software VIBs
-                                                Section -Style Heading5 'Software VIBs' {
+                                                Try {
                                                     $esxcli = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
                                                     $VMHostVibs = $esxcli.software.vib.list.Invoke()
-                                                    $VMHostVibs = foreach ($VMHostVib in $VMHostVibs) {
-                                                        [PSCustomObject]@{
-                                                            'VIB' = $VMHostVib.Name
-                                                            'ID' = $VMHostVib.Id
-                                                            'Version' = $VMHostVib.Version
-                                                            'Acceptance Level' = $VMHostVib.AcceptanceLevel
-                                                            'Creation Date' = $VMHostVib.CreationDate
-                                                            'Install Date' = $VMHostVib.InstallDate
+                                                } Catch {
+                                                    Write-PScriboMessage -IsWarning "Unable to collect Software VIBs information from ESXi Host $($VMHost)."
+                                                }
+                                                if ($VMHostVibs) {
+                                                    Section -Style Heading5 'Software VIBs' {
+                                                        $VMHostVibs = foreach ($VMHostVib in $VMHostVibs) {
+                                                            [PSCustomObject]@{
+                                                                'VIB' = $VMHostVib.Name
+                                                                'ID' = $VMHostVib.Id
+                                                                'Version' = $VMHostVib.Version
+                                                                'Acceptance Level' = $VMHostVib.AcceptanceLevel
+                                                                'Creation Date' = $VMHostVib.CreationDate
+                                                                'Install Date' = $VMHostVib.InstallDate
+                                                            }
                                                         }
+                                                        $TableParams = @{
+                                                            Name = "Software VIBs - $VMHost"
+                                                            ColumnWidths = 15, 25, 15, 15, 15, 15
+                                                        }
+                                                        if ($Report.ShowTableCaptions) {
+                                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                        }
+                                                        $VMHostVibs | Sort-Object 'Install Date' -Descending | Table @TableParams
                                                     }
-                                                    $TableParams = @{
-                                                        Name = "Software VIBs - $VMHost"
-                                                        ColumnWidths = 15, 25, 15, 15, 15, 15
-                                                    }
-                                                    if ($Report.ShowTableCaptions) {
-                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                    }
-                                                    $VMHostVibs | Sort-Object 'Install Date' -Descending | Table @TableParams
                                                 }
                                                 #endregion ESXi Host Software VIBs
                                             }
