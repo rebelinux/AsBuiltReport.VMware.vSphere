@@ -2145,23 +2145,29 @@ function Invoke-AsBuiltReport.VMware.vSphere {
 
                                             #region ESXi Host Image Profile Information
                                             if ($UserRole.Privilege -contains 'Host.Config.Settings') {
-                                                Section -Style Heading5 'Image Profile' {
-                                                    $installdate = Get-InstallDate
+                                                Try {
                                                     $esxcli = Get-EsxCli -VMHost $VMHost -V2 -Server $vCenter
                                                     $ImageProfile = $esxcli.software.profile.get.Invoke()
-                                                    $SecurityProfile = [PSCustomObject]@{
-                                                        'Image Profile' = $ImageProfile.Name
-                                                        'Vendor' = $ImageProfile.Vendor
-                                                        'Installation Date' = $InstallDate.InstallDate
+                                                } Catch {
+                                                    Write-PScriboMessage -IsWarning "Unable to collect Image Profile information from ESXi Host $($VMHost)."
+                                                }
+                                                if ($ImageProfile) {
+                                                    Section -Style Heading5 'Image Profile' {
+                                                        $installdate = Get-InstallDate
+                                                        $SecurityProfile = [PSCustomObject]@{
+                                                            'Image Profile' = $ImageProfile.Name
+                                                            'Vendor' = $ImageProfile.Vendor
+                                                            'Installation Date' = $InstallDate.InstallDate
+                                                        }
+                                                        $TableParams = @{
+                                                            Name = "Image Profile - $VMHost"
+                                                            #ColumnWidths = 50, 25, 25
+                                                        }
+                                                        if ($Report.ShowTableCaptions) {
+                                                            $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                        }
+                                                        $SecurityProfile | Table @TableParams
                                                     }
-                                                    $TableParams = @{
-                                                        Name = "Image Profile - $VMHost"
-                                                        #ColumnWidths = 50, 25, 25
-                                                    }
-                                                    if ($Report.ShowTableCaptions) {
-                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                    }
-                                                    $SecurityProfile | Table @TableParams
                                                 }
                                             } else {
                                                 Write-PScriboMessage "Insufficient user privileges to report ESXi host image profiles. Please ensure the user account has the 'Host > Configuration > Change settings' privilege assigned."
