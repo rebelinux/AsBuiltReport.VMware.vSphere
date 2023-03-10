@@ -2073,40 +2073,52 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                             #endregion ESXi Host Boot Devices
 
                                             #region ESXi Host PCI Devices
-                                            Section -Style Heading5 'PCI Devices' {
+                                            try {
                                                 $PciHardwareDevices = ($esxcli.hardware.pci.list.Invoke()).Where{ $_.VMkernelName -match 'vmhba|vmnic|vmgfx' -and $_.ModuleName -ne 'None'} | Sort-Object -Property VMkernelName
-                                                $VMHostPciDevices = foreach ($PciHardwareDevice in $PciHardwareDevices) {
-                                                    [PSCustomObject]@{
-                                                        'Device' = $PciHardwareDevice.VMkernelName
-                                                        'PCI Address' = $PciHardwareDevice.Address
-                                                        'Device Class' = $PciHardwareDevice.DeviceClassName
-                                                        'Device Name' = $PciHardwareDevice.DeviceName
-                                                        'Vendor Name' = $PciHardwareDevice.VendorName
-                                                        'Slot Description' = $PciHardwareDevice.SlotDescription
+                                            } Catch {
+                                                Write-PScriboMessage -IsWarning "Unable to obtain ESXi Host $($VMHost) PCI Devices."
+                                            }
+                                            if ($PciHardwareDevices) {
+                                                Section -Style Heading5 'PCI Devices' {
+                                                    $VMHostPciDevices = foreach ($PciHardwareDevice in $PciHardwareDevices) {
+                                                        [PSCustomObject]@{
+                                                            'Device' = $PciHardwareDevice.VMkernelName
+                                                            'PCI Address' = $PciHardwareDevice.Address
+                                                            'Device Class' = $PciHardwareDevice.DeviceClassName
+                                                            'Device Name' = $PciHardwareDevice.DeviceName
+                                                            'Vendor Name' = $PciHardwareDevice.VendorName
+                                                            'Slot Description' = $PciHardwareDevice.SlotDescription
+                                                        }
                                                     }
+                                                    $TableParams = @{
+                                                        Name = "PCI Devices - $VMHost"
+                                                        ColumnWidths = 12, 13, 15, 25, 20, 15
+                                                    }
+                                                    if ($Report.ShowTableCaptions) {
+                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                    }
+                                                    $VMHostPciDevices | Table @TableParams
                                                 }
-                                                $TableParams = @{
-                                                    Name = "PCI Devices - $VMHost"
-                                                    ColumnWidths = 12, 13, 15, 25, 20, 15
-                                                }
-                                                if ($Report.ShowTableCaptions) {
-                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                }
-                                                $VMHostPciDevices | Table @TableParams
                                             }
                                             #endregion ESXi Host PCI Devices
 
                                             #region ESXi Host PCI Devices Drivers & Firmware
-                                            Section -Style Heading5 'PCI Devices Drivers & Firmware' {
+                                            Try {
                                                 $VMHostPciDevicesDetails = Get-PciDeviceDetail -Server $vCenter -esxcli $esxcli | Sort-Object 'Device'
-                                                $TableParams = @{
-                                                    Name = "PCI Devices Drivers & Firmware - $VMHost"
-                                                    ColumnWidths = 12, 20, 11, 19, 11, 11, 16
+                                            } Catch {
+                                                Write-PScriboMessage -IsWarning "Unable to obtain ESXi Host $($VMHost) PCI Devices Drivers & Firmware."
+                                            }
+                                            if ($VMHostPciDevicesDetails) {
+                                                Section -Style Heading5 'PCI Devices Drivers & Firmware' {
+                                                    $TableParams = @{
+                                                        Name = "PCI Devices Drivers & Firmware - $VMHost"
+                                                        ColumnWidths = 12, 20, 11, 19, 11, 11, 16
+                                                    }
+                                                    if ($Report.ShowTableCaptions) {
+                                                        $TableParams['Caption'] = "- $($TableParams.Name)"
+                                                    }
+                                                    $VMHostPciDevicesDetails | Table @TableParams
                                                 }
-                                                if ($Report.ShowTableCaptions) {
-                                                    $TableParams['Caption'] = "- $($TableParams.Name)"
-                                                }
-                                                $VMHostPciDevicesDetails | Table @TableParams
                                             }
                                             #endregion ESXi Host PCI Devices Drivers & Firmware
                                         }
