@@ -4380,8 +4380,8 @@ function Invoke-AsBuiltReport.VMware.vSphere {
                                     # TODO: Space Load Balance Config, IO Load Balance Config, Rules
                                     # TODO: Test Tags
 
-                                    $DSCUsedPercent = [math]::Round((100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2)
-                                    $DSCFreePercent = [math]::Round(($DSCluster.FreeSpaceGB / $DSCluster.CapacityGB) * 100, 2)
+                                    $DSCUsedPercent = if (0 -in @($DSCluster.FreeSpaceGB, $DSCluster.CapacityGB)) {0} else {[math]::Round((100 - (($DSCluster.FreeSpaceGB) / ($DSCluster.CapacityGB) * 100)), 2)}
+                                    $DSCFreePercent = if (0 -in @($DSCluster.FreeSpaceGB, $DSCluster.CapacityGB)) {0} else { [math]::Round(($DSCluster.FreeSpaceGB / $DSCluster.CapacityGB) * 100, 2) }
                                     $DSCUsedCapacityGB = ($DSCluster.CapacityGB - $DSCluster.FreeSpaceGB)
 
                                     Section -Style Heading3 $DSCluster.Name {
